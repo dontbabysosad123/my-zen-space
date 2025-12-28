@@ -3,239 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>静谧空间 | 专业冥想混音器</title>
+    <title>冥想空间 - 稳定修复版</title>
     <style>
-        :root { --accent: #a5b4fc; --glass: rgba(0, 0, 0, 0.7); }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: -apple-system, "PingFang SC", sans-serif; }
+        :root { --accent: #a5b4fc; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: sans-serif; }
         
         /* 视频背景 */
-        #bg-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transition: opacity 1s; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2; pointer-events: none; }
+        #bg-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2; pointer-events: none; }
 
-        /* 内容层 - 降低层级防止遮挡 */
-        .content { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; }
-        .content > * { pointer-events: auto; } /* 仅让内容内部的按钮可点 */
-
+        /* 核心内容区 */
+        .app-container { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* 呼吸圆环 */
         .breath-circle { 
-            width: 45vmin; height: 45vmin; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+            width: 300px; height: 300px; border-radius: 50%; border: 2px solid var(--accent);
             display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
-            background: radial-gradient(circle, rgba(165,180,252,0.1) 0%, transparent 80%);
-            transition: transform 4s ease-in-out;
+            background: radial-gradient(circle, rgba(165,180,252,0.2) 0%, transparent 70%);
         }
-        .is-breathing .breath-circle { animation: breatheEffect 8s infinite ease-in-out; }
-        @keyframes breatheEffect { 0%, 100% { transform: scale(0.85); opacity: 0.5; } 50% { transform: scale(1.15); border-color: var(--accent); opacity: 1; } }
+        .is-breathing .breath-circle { animation: breathe 8s infinite ease-in-out; }
+        @keyframes breathe { 0%, 100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
 
-        .timer-display { font-size: 3.5rem; font-weight: bold; font-family: monospace; margin: 15px 0; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .guide-text { font-size: 1.2rem; height: 3rem; text-align: center; max-width: 85%; opacity: 0.9; }
+        .timer { font-size: 4rem; font-weight: bold; font-family: monospace; margin-bottom: 20px; }
 
-        /* 调音台 - 确保在左下角可点 */
-        .mixer-panel {
-            position: absolute; bottom: 30px; left: 30px; z-index: 1000;
-            background: var(--glass); backdrop-filter: blur(15px);
-            padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
-            width: 220px; 
+        /* 底部控制区 - 确保可见 */
+        .main-controls { position: absolute; bottom: 15%; z-index: 100; text-align: center; width: 100%; }
+        .btn-main { 
+            padding: 15px 50px; font-size: 1.2rem; border-radius: 50px; border: 2px solid #fff;
+            background: #fff; color: #000; font-weight: bold; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
-        .mixer-item { margin-bottom: 15px; }
-        .mixer-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .mixer-label-row label { font-size: 11px; color: #aaa; }
-        .vol-num { font-size: 11px; font-family: monospace; color: var(--accent); background: rgba(165,180,252,0.1); padding: 2px 5px; border-radius: 4px; min-width: 32px; text-align: center; }
-        input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; margin: 0; }
+        .btn-main:hover { transform: scale(1.05); background: var(--accent); border-color: var(--accent); }
 
-        /* 右上角设置 - 绝对置顶 */
-        .settings { position: absolute; top: 20px; right: 20px; z-index: 10000; }
-        .dropdown { 
-            display: none; position: absolute; top: 55px; right: 0; background: #111; 
-            backdrop-filter: blur(20px); border-radius: 12px; width: 180px; border: 1px solid rgba(255,255,255,0.2);
-            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        /* 右上角菜单 */
+        .settings-box { position: fixed; top: 20px; right: 20px; z-index: 200; }
+        .menu-dropdown { 
+            display: none; position: absolute; top: 50px; right: 0; background: #222; 
+            border: 1px solid #444; border-radius: 10px; width: 150px; overflow: hidden;
         }
-        .dropdown.show { display: block; }
-        .item { padding: 15px; cursor: pointer; font-size: 14px; transition: 0.2s; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff; }
-        .item:hover { background: var(--accent); color: #000; }
+        .menu-dropdown.show { display: block; }
+        .menu-item { padding: 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #333; }
+        .menu-item:hover { background: #444; }
 
-        .btn { padding: 12px 25px; border-radius: 30px; border: 1px solid white; background: rgba(255,255,255,0.15); color: white; cursor: pointer; transition: 0.3s; font-size: 14px; }
-        .btn:hover { background: white; color: black; }
-        .controls { display: flex; gap: 20px; margin-top: 30px; }
+        /* 左下角调音台 */
+        .mixer { position: fixed; bottom: 20px; left: 20px; z-index: 200; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; width: 180px; }
+        .mixer label { font-size: 10px; color: #888; display: block; margin-top: 5px; }
+        input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
     </style>
 </head>
 <body>
 
     <video id="bg-video" autoplay muted loop playsinline>
-        <source id="video-source" src="cloud.mp4" type="video/mp4">
+        <source src="cloud.mp4" type="video/mp4">
     </video>
     <div class="overlay"></div>
 
-    <div class="mixer-panel">
-        <div style="font-size: 13px; margin-bottom: 15px; font-weight: bold; color: var(--accent);">氛围调音台</div>
-        <div class="mixer-item">
-            <div class="mixer-label-row"><label>旋律音乐</label><span class="vol-num" id="txt-music">50%</span></div>
-            <input type="range" id="vol-music" min="0" max="1" step="0.01" value="0.5" oninput="applyVolume()">
-        </div>
-        <div class="mixer-item">
-            <div class="mixer-label-row"><label>自然环境</label><span class="vol-num" id="txt-nature">50%</span></div>
-            <input type="range" id="vol-nature" min="0" max="1" step="0.01" value="0.5" oninput="applyVolume()">
-        </div>
-        <div class="mixer-item">
-            <div class="mixer-label-row"><label>叠加白噪</label><span class="vol-num" id="txt-ambient">20%</span></div>
-            <input type="range" id="vol-ambient" min="0" max="1" step="0.01" value="0.2" oninput="applyVolume()">
+    <div class="settings-box">
+        <button class="btn-main" style="padding: 8px 15px; font-size: 14px;" onclick="toggleMenu(event)">场景/时间 ⚙️</button>
+        <div class="menu-dropdown" id="menu">
+            <div class="menu-item" onclick="changeScene('cloud.mp4', 'cloud_theme.mp3', 'cloud_bg.mp3')">☁️ 云端</div>
+            <div class="menu-item" onclick="changeScene('galaxy.mp4', 'galaxy_theme.mp3', 'galaxy_bg.mp3')">🌌 太空</div>
+            <div class="menu-item" onclick="changeScene('forest.mp4', 'forest_theme.mp3', 'forest_bg.mp3')">🌲 森林</div>
+            <hr style="border: 0.5px solid #333;">
+            <div class="menu-item" onclick="setTime(5)">⏱️ 5 分钟</div>
+            <div class="menu-item" onclick="setTime(10)">⏱️ 10 分钟</div>
+            <div class="item menu-item" onclick="setTime(20)">⏱️ 20 分钟</div>
         </div>
     </div>
 
-    <div class="settings">
-        <button class="btn" id="menu-btn" onclick="toggleMenu(event)">场景 & 时长 ⚙️</button>
-        <div class="dropdown" id="menu">
-            <div style="padding: 10px 15px; font-size: 10px; color: #888;">切换场景</div>
-            <div class="item" onclick="changeScene('cloud.mp4', 'cloud_theme.mp3', 'cloud_bg.mp3')">☁️ 云端 Cloud</div>
-            <div class="item" onclick="changeScene('galaxy.mp4', 'galaxy_theme.mp3', 'galaxy_bg.mp3')">🌌 太空 Galaxy</div>
-            <div class="item" onclick="changeScene('forest.mp4', 'forest_theme.mp3', 'forest_bg.mp3')">🌲 森林 Forest</div>
-            <div style="padding: 10px 15px; font-size: 10px; color: #888;">设定时间</div>
-            <div class="item" onclick="updateTime(5)">⏱️ 5 分钟</div>
-            <div class="item" onclick="updateTime(10)">⏱️ 10 分钟</div>
-            <div class="item" onclick="updateTime(20)">⏱️ 20 分钟</div>
+    <div class="app-container" id="app">
+        <div class="breath-circle">
+            <span id="status-text">静心</span>
         </div>
+        <div class="timer" id="timer-display">10:00</div>
     </div>
 
-    <div class="content" id="app">
-        <div class="breath-circle"><span id="breath-status" style="letter-spacing: 4px; font-size: 1.2rem;">准备</span></div>
-        <div class="timer-display" id="timer-text">10:00</div>
-        <div class="guide-text" id="guide-text">在静谧中找回自我</div>
-        <div class="controls">
-            <button class="btn" id="start-btn" onclick="startMeditation()" style="background:white; color:black; font-weight:bold;">开始练习</button>
-            <button class="btn" id="pause-btn" onclick="togglePause()" style="display:none;">暂停</button>
-        </div>
+    <div class="main-controls">
+        <button class="btn-main" id="start-btn" onclick="startMeditation()">开始练习</button>
+        <button class="btn-main" id="pause-btn" onclick="togglePause()" style="display:none; background:transparent; color:#fff;">暂停</button>
     </div>
 
-    <audio id="audio-music" loop src="cloud_theme.mp3"></audio>
-    <audio id="audio-nature" loop src="cloud_bg.mp3"></audio>
-    <audio id="audio-ambient" loop src="universal_noise.mp3"></audio>
-    <audio id="audio-gong" src="finish_gong.mp3"></audio>
+    <div class="mixer">
+        <label>旋律音乐</label>
+        <input type="range" id="v1" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+        <label>环境背景</label>
+        <input type="range" id="v2" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+        <label>深度底噪</label>
+        <input type="range" id="v3" min="0" max="1" step="0.01" value="0.2" oninput="updateVol()">
+    </div>
+
+    <audio id="a1" loop src="cloud_theme.mp3"></audio>
+    <audio id="a2" loop src="cloud_bg.mp3"></audio>
+    <audio id="a3" loop src="universal_noise.mp3"></audio>
+    <audio id="ag" src="finish_gong.mp3"></audio>
 
     <script>
         const v = document.getElementById('bg-video');
-        const aMusic = document.getElementById('audio-music');
-        const aNature = document.getElementById('audio-nature');
-        const aAmbient = document.getElementById('audio-ambient');
-        const aGong = document.getElementById('audio-gong');
-        const timerText = document.getElementById('timer-text');
-        const guide = document.getElementById('guide-text');
-        const breathStatus = document.getElementById('breath-status');
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const menu = document.getElementById('menu');
+        const a1 = document.getElementById('a1');
+        const a2 = document.getElementById('a2');
+        const a3 = document.getElementById('a3');
+        const ag = document.getElementById('ag');
+        const timerText = document.getElementById('timer-display');
         
-        let timeLeft = 600; 
-        let isRunning = false;
-        let isPaused = false;
-        let countdown = null;
+        let timeLeft = 600;
+        let running = false;
+        let paused = false;
+        let timer = null;
 
-        function updateTime(mins) {
-            clearInterval(countdown);
-            isRunning = false;
-            isPaused = false;
-            timeLeft = mins * 60;
-            timerText.innerText = mins + ":00";
-            startBtn.style.display = 'block';
-            pauseBtn.style.display = 'none';
-            document.getElementById('app').classList.remove('is-breathing');
-            [aMusic, aNature, aAmbient, v].forEach(el => { try { el.pause(); } catch(e){} });
-            breathStatus.innerText = "准备";
-            guide.innerText = "时间已设定为 " + mins + " 分钟";
-            menu.classList.remove('show');
+        function setTime(m) {
+            timeLeft = m * 60;
+            timerText.innerText = m + ":00";
+            document.getElementById('menu').classList.remove('show');
         }
 
-        function applyVolume() {
-            try {
-                aMusic.volume = document.getElementById('vol-music').value;
-                aNature.volume = document.getElementById('vol-nature').value;
-                aAmbient.volume = document.getElementById('vol-ambient').value;
-                document.getElementById('txt-music').innerText = Math.round(aMusic.volume * 100) + "%";
-                document.getElementById('txt-nature').innerText = Math.round(aNature.volume * 100) + "%";
-                document.getElementById('txt-ambient').innerText = Math.round(aAmbient.volume * 100) + "%";
-            } catch(e) { console.error("音量应用失败", e); }
+        function updateVol() {
+            a1.volume = document.getElementById('v1').value;
+            a2.volume = document.getElementById('v2').value;
+            a3.volume = document.getElementById('v3').value;
         }
 
-        function changeScene(vFile, mFile, nFile) {
-            v.style.opacity = 0;
-            setTimeout(() => {
-                v.src = vFile;
-                aMusic.src = mFile;
-                aNature.src = nFile;
-                v.load(); aMusic.load(); aNature.load();
-                if(isRunning && !isPaused) {
-                    v.play(); aMusic.play(); aNature.play();
-                }
-                v.style.opacity = 1;
-            }, 500);
-            menu.classList.remove('show');
+        function changeScene(vs, as1, as2) {
+            v.src = vs;
+            a1.src = as1;
+            a2.src = as2;
+            v.load(); a1.load(); a2.load();
+            if(running && !paused) { v.play(); a1.play(); a2.play(); }
+            document.getElementById('menu').classList.remove('show');
         }
 
         function startMeditation() {
-            isRunning = true;
-            isPaused = false;
+            running = true;
+            paused = false;
             document.getElementById('app').classList.add('is-breathing');
-            startBtn.style.display = 'none';
-            pauseBtn.style.display = 'block';
-            pauseBtn.innerText = "暂停";
-            breathStatus.innerText = "吸 · 呼";
-            applyVolume();
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'inline-block';
             
-            // 解决没声音的核心：在交互中显式播放
-            const playPromise1 = aMusic.play();
-            const playPromise2 = aNature.play();
-            aAmbient.play();
-            v.play();
+            updateVol();
+            a1.play(); a2.play(); a3.play(); v.play();
 
-            if (playPromise1 !== undefined) {
-                playPromise1.catch(error => { console.log("播放被拦截，请尝试再次点击开始"); });
-            }
-
-            if(countdown) clearInterval(countdown);
-            countdown = setInterval(() => {
-                if (timeLeft > 0) {
+            timer = setInterval(() => {
+                if(timeLeft > 0) {
                     timeLeft--;
-                    let m = Math.floor(timeLeft / 60);
-                    let s = timeLeft % 60;
-                    timerText.innerText = m + ":" + (s < 10 ? '0' : '') + s;
+                    let mm = Math.floor(timeLeft / 60);
+                    let ss = timeLeft % 60;
+                    timerText.innerText = mm + ":" + (ss < 10 ? '0' : '') + ss;
                 } else {
-                    finish();
+                    clearInterval(timer);
+                    ag.play();
+                    alert("练习结束");
                 }
             }, 1000);
         }
 
         function togglePause() {
-            if (!isPaused) {
-                isPaused = true;
-                clearInterval(countdown);
-                aMusic.pause(); aNature.pause(); aAmbient.pause(); v.pause();
-                pauseBtn.innerText = "继续";
+            if(!paused) {
+                paused = true;
+                clearInterval(timer);
+                a1.pause(); a2.pause(); a3.pause(); v.pause();
+                document.getElementById('pause-btn').innerText = "继续";
                 document.getElementById('app').classList.remove('is-breathing');
-                breathStatus.innerText = "已暂停";
             } else {
+                paused = false;
+                document.getElementById('pause-btn').innerText = "暂停";
                 startMeditation();
             }
         }
 
-        function finish() {
-            clearInterval(countdown);
-            isRunning = false;
-            try { aGong.play(); } catch(e){}
-            aMusic.pause(); aNature.pause(); aAmbient.pause(); v.pause();
-            document.getElementById('app').classList.remove('is-breathing');
-            guide.innerText = "练习结束，愿你带着平静继续。";
-            breathStatus.innerText = "完成";
-            pauseBtn.style.display = 'none';
-        }
-
-        function toggleMenu(e) {
-            e.stopPropagation();
-            menu.classList.toggle('show');
-        }
-
-        window.onclick = function(e) {
-            if (!e.target.matches('#menu-btn')) {
-                menu.classList.remove('show');
-            }
-        }
-        window.onload = applyVolume;
+        function toggleMenu(e) { e.stopPropagation(); document.getElementById('menu').classList.toggle('show'); }
+        window.onclick = () => document.getElementById('menu').classList.remove('show');
+        window.onload = updateVol;
     </script>
 </body>
 </html>
