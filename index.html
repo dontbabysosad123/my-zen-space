@@ -15,18 +15,27 @@
         /* 核心内容区 */
         .app-container { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
-        /* 呼吸圆环 */
+        /* 呼吸圆环 - 4-7-8节奏 */
         .breath-circle { 
             width: 300px; height: 300px; border-radius: 50%; border: 2px solid var(--accent);
             display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
             background: radial-gradient(circle, rgba(165,180,252,0.2) 0%, transparent 70%);
+            transition: transform 4s ease-in, opacity 4s ease-in;
         }
-        .is-breathing .breath-circle { animation: breathe 8s infinite ease-in-out; }
-        @keyframes breathe { 0%, 100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+        .is-breathing .breath-circle { 
+            animation: breathe-478 19s infinite; 
+        }
+        /* 4-7-8呼吸节奏：4秒吸气，7秒憋气，8秒吐气 */
+        @keyframes breathe-478 { 
+            0% { transform: scale(0.9); opacity: 0.6; }
+            21% { transform: scale(1.15); opacity: 1; }
+            58% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
 
         .timer { font-size: 4rem; font-weight: bold; font-family: monospace; margin-bottom: 20px; }
 
-        /* 底部控制区 - 确保可见 */
+        /* 底部控制区 */
         .main-controls { position: absolute; bottom: 15%; z-index: 100; text-align: center; width: 100%; }
         .btn-main { 
             padding: 15px 50px; font-size: 1.2rem; border-radius: 50px; border: 2px solid #fff;
@@ -46,9 +55,13 @@
         .menu-item:hover { background: #444; }
 
         /* 左下角调音台 */
-        .mixer { position: fixed; bottom: 20px; left: 20px; z-index: 200; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; width: 180px; }
-        .mixer label { font-size: 10px; color: #888; display: block; margin-top: 5px; }
+        .mixer { position: fixed; bottom: 20px; left: 20px; z-index: 200; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; width: 200px; }
+        .mixer label { font-size: 10px; color: #888; display: block; margin-top: 8px; }
+        .mixer .control-group { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .mixer .control-group:last-child { border-bottom: none; margin-bottom: 0; }
+        .mixer .control-name { font-size: 11px; color: var(--accent); margin-bottom: 5px; }
         input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        .speed-value { font-size: 10px; color: #aaa; text-align: right; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -84,12 +97,35 @@
     </div>
 
     <div class="mixer">
-        <label>旋律音乐</label>
-        <input type="range" id="v1" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
-        <label>环境背景</label>
-        <input type="range" id="v2" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
-        <label>深度底噪</label>
-        <input type="range" id="v3" min="0" max="1" step="0.01" value="0.2" oninput="updateVol()">
+        <!-- 旋律音乐控制 -->
+        <div class="control-group">
+            <div class="control-name">🎵 旋律音乐</div>
+            <label>音量</label>
+            <input type="range" id="v1" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+            <label>倍速</label>
+            <input type="range" id="s1" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+            <span class="speed-value" id="sv1">1.0x</span>
+        </div>
+        
+        <!-- 环境背景控制 -->
+        <div class="control-group">
+            <div class="control-name">🌿 环境背景</div>
+            <label>音量</label>
+            <input type="range" id="v2" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+            <label>倍速</label>
+            <input type="range" id="s2" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+            <span class="speed-value" id="sv2">1.0x</span>
+        </div>
+        
+        <!-- 深度底噪控制 -->
+        <div class="control-group">
+            <div class="control-name">🌊 深度底噪</div>
+            <label>音量</label>
+            <input type="range" id="v3" min="0" max="1" step="0.01" value="0.2" oninput="updateVol()">
+            <label>倍速</label>
+            <input type="range" id="s3" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+            <span class="speed-value" id="sv3">1.0x</span>
+        </div>
     </div>
 
     <audio id="a1" loop src="cloud_theme.mp3"></audio>
@@ -122,11 +158,30 @@
             a3.volume = document.getElementById('v3').value;
         }
 
+        function updateSpeed() {
+            const s1 = document.getElementById('s1').value;
+            const s2 = document.getElementById('s2').value;
+            const s3 = document.getElementById('s3').value;
+            
+            a1.playbackRate = parseFloat(s1);
+            a2.playbackRate = parseFloat(s2);
+            a3.playbackRate = parseFloat(s3);
+            
+            document.getElementById('sv1').innerText = parseFloat(s1).toFixed(1) + 'x';
+            document.getElementById('sv2').innerText = parseFloat(s2).toFixed(1) + 'x';
+            document.getElementById('sv3').innerText = parseFloat(s3).toFixed(1) + 'x';
+        }
+
         function changeScene(vs, as1, as2) {
             v.src = vs;
             a1.src = as1;
             a2.src = as2;
             v.load(); a1.load(); a2.load();
+            
+            // 保持倍速设置
+            a1.playbackRate = parseFloat(document.getElementById('s1').value);
+            a2.playbackRate = parseFloat(document.getElementById('s2').value);
+            
             if(running && !paused) { v.play(); a1.play(); a2.play(); }
             document.getElementById('menu').classList.remove('show');
         }
@@ -139,6 +194,7 @@
             document.getElementById('pause-btn').style.display = 'inline-block';
             
             updateVol();
+            updateSpeed();
             a1.play(); a2.play(); a3.play(); v.play();
 
             timer = setInterval(() => {
@@ -171,7 +227,10 @@
 
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('menu').classList.toggle('show'); }
         window.onclick = () => document.getElementById('menu').classList.remove('show');
-        window.onload = updateVol;
+        window.onload = function() {
+            updateVol();
+            updateSpeed();
+        };
     </script>
 </body>
 </html>
