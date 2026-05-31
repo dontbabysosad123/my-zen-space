@@ -54,14 +54,66 @@
         .menu-item { padding: 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #333; }
         .menu-item:hover { background: #444; }
 
-        /* 左下角调音台 */
-        .mixer { position: fixed; bottom: 20px; left: 20px; z-index: 200; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; width: 200px; }
+        /* 左侧滑出式调音台 */
+        .mixer-wrapper {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%) translateX(-240px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .mixer-wrapper.open {
+            transform: translateY(-50%) translateX(0);
+        }
+        
+        .mixer { 
+            background: rgba(0,0,0,0.9); 
+            padding: 20px; 
+            border-radius: 0 10px 10px 0; 
+            width: 200px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
         .mixer label { font-size: 10px; color: #888; display: block; margin-top: 8px; }
-        .mixer .control-group { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .mixer .control-group { margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #333; }
         .mixer .control-group:last-child { border-bottom: none; margin-bottom: 0; }
         .mixer .control-name { font-size: 11px; color: var(--accent); margin-bottom: 5px; }
         input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
         .speed-value { font-size: 10px; color: #aaa; text-align: right; display: block; margin-top: 2px; }
+        
+        /* 呼出箭头按钮 */
+        .mixer-toggle {
+            width: 30px;
+            height: 60px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: none;
+            color: white;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        
+        .mixer-toggle:hover {
+            background: rgba(165,180,252,0.5);
+        }
+        
+        .mixer-toggle .arrow {
+            transition: transform 0.3s ease;
+        }
+        
+        .mixer-wrapper.open .mixer-toggle .arrow {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
@@ -76,7 +128,7 @@
         <div class="menu-dropdown" id="menu">
             <div class="menu-item" onclick="changeScene('cloud.mp4', 'cloud_theme.mp3', 'cloud_bg.mp3')">☁️ 云端</div>
             <div class="menu-item" onclick="changeScene('galaxy.mp4', 'galaxy_theme.mp3', 'galaxy_bg.mp3')">🌌 太空</div>
-            <div class="menu-item" onclick="changeScene('forest.mp4', 'forest_theme.mp3', 'forest_bg.mp3')">🌲 森林</div>
+            <div class="menu-item" onclick="changeScene('forest.mp4', 'forest_theme_nodrum.mp3', 'forest_bg_soft.mp3')">🌲 森林</div>
             <hr style="border: 0.5px solid #333;">
             <div class="menu-item" onclick="setTime(5)">⏱️ 5 分钟</div>
             <div class="menu-item" onclick="setTime(10)">⏱️ 10 分钟</div>
@@ -96,36 +148,44 @@
         <button class="btn-main" id="pause-btn" onclick="togglePause()" style="display:none; background:transparent; color:#fff;">暂停</button>
     </div>
 
-    <div class="mixer">
-        <!-- 旋律音乐控制 -->
-        <div class="control-group">
-            <div class="control-name">🎵 旋律音乐</div>
-            <label>音量</label>
-            <input type="range" id="v1" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
-            <label>倍速</label>
-            <input type="range" id="s1" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
-            <span class="speed-value" id="sv1">1.0x</span>
+    <!-- 左侧滑出式调音台 -->
+    <div class="mixer-wrapper" id="mixerWrapper">
+        <div class="mixer" id="mixer">
+            <!-- 旋律音乐控制 -->
+            <div class="control-group">
+                <div class="control-name">🎵 旋律音乐</div>
+                <label>音量</label>
+                <input type="range" id="v1" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+                <label>倍速</label>
+                <input type="range" id="s1" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+                <span class="speed-value" id="sv1">1.0x</span>
+            </div>
+            
+            <!-- 环境背景控制 -->
+            <div class="control-group">
+                <div class="control-name">🌿 环境背景</div>
+                <label>音量</label>
+                <input type="range" id="v2" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
+                <label>倍速</label>
+                <input type="range" id="s2" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+                <span class="speed-value" id="sv2">1.0x</span>
+            </div>
+            
+            <!-- 深度底噪控制 -->
+            <div class="control-group">
+                <div class="control-name">🌊 深度底噪</div>
+                <label>音量</label>
+                <input type="range" id="v3" min="0" max="1" step="0.01" value="0.2" oninput="updateVol()">
+                <label>倍速</label>
+                <input type="range" id="s3" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+                <span class="speed-value" id="sv3">1.0x</span>
+            </div>
         </div>
         
-        <!-- 环境背景控制 -->
-        <div class="control-group">
-            <div class="control-name">🌿 环境背景</div>
-            <label>音量</label>
-            <input type="range" id="v2" min="0" max="1" step="0.01" value="0.5" oninput="updateVol()">
-            <label>倍速</label>
-            <input type="range" id="s2" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
-            <span class="speed-value" id="sv2">1.0x</span>
-        </div>
-        
-        <!-- 深度底噪控制 -->
-        <div class="control-group">
-            <div class="control-name">🌊 深度底噪</div>
-            <label>音量</label>
-            <input type="range" id="v3" min="0" max="1" step="0.01" value="0.2" oninput="updateVol()">
-            <label>倍速</label>
-            <input type="range" id="s3" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
-            <span class="speed-value" id="sv3">1.0x</span>
-        </div>
+        <!-- 呼出箭头按钮 -->
+        <button class="mixer-toggle" id="mixerToggle" onclick="toggleMixer()">
+            <span class="arrow">▶</span>
+        </button>
     </div>
 
     <audio id="a1" loop src="cloud_theme.mp3"></audio>
@@ -227,6 +287,13 @@
 
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('menu').classList.toggle('show'); }
         window.onclick = () => document.getElementById('menu').classList.remove('show');
+        
+        // 调音台呼出/隐藏
+        function toggleMixer() {
+            const wrapper = document.getElementById('mixerWrapper');
+            wrapper.classList.toggle('open');
+        }
+        
         window.onload = function() {
             updateVol();
             updateSpeed();
